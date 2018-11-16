@@ -18,6 +18,14 @@ public interface SdkReporter {
   void incrementCounter(MetricName metricName);
 
   /**
+   * Increment the counter metric by {@code n}.
+   *
+   * @param metric            Name of the Counter to be reported.
+   * @param n                 value by which to increment the counter.
+   */
+  void incrementCounter(MetricName metric, long n);
+
+  /**
    * Increment the delta counter
    *
    * @param metricName         Name of the Delta Counter to be reported.
