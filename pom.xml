@@ -7,7 +7,7 @@
     <version>0.9.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Wavefront Internal Reporter for Java</name>
+    <name>Wavefront by VMware Internal Reporter for Java</name>
     <description>Internal reporter for reporting metrics and histograms to Wavefront</description>
     <url>https://github.com/wavefrontHQ/wavefront-internal-reporter-java</url>
     <licenses>
