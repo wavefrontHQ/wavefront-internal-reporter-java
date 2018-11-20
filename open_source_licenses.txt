@@ -1,6 +1,6 @@
 open_source_licenses.txt
 
-Wavefront Internal Reporter for Java 0.9.1 GA
+Wavefront by VMware Internal Reporter for Java 0.9.1 GA
 
 ======================================================================
 
