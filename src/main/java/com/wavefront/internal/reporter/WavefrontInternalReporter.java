@@ -36,6 +36,7 @@ import io.dropwizard.metrics5.MetricFilter;
 import io.dropwizard.metrics5.MetricName;
 import io.dropwizard.metrics5.MetricRegistry;
 import io.dropwizard.metrics5.ScheduledReporter;
+import io.dropwizard.metrics5.SlidingTimeWindowArrayReservoir;
 import io.dropwizard.metrics5.Snapshot;
 import io.dropwizard.metrics5.Timer;
 import io.dropwizard.metrics5.WavefrontHistogram;
@@ -461,6 +462,12 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   @Override
   public Timer newTimer(MetricName metricName) {
     return internalRegistry.timer(metricName);
+  }
+
+  @Override
+  public Timer newTimer(MetricName metricName, SlidingTimeWindowArrayReservoir slidingTimeWindowArrayReservoir) {
+    MetricRegistry.MetricSupplier<Timer> timerMetricSupplier = () -> new Timer(slidingTimeWindowArrayReservoir);
+    return internalRegistry.timer(metricName, timerMetricSupplier);
   }
 
   @Override

@@ -17,6 +17,8 @@ import io.dropwizard.metrics5.Histogram;
 import io.dropwizard.metrics5.Meter;
 import io.dropwizard.metrics5.MetricName;
 import io.dropwizard.metrics5.MetricRegistry;
+import io.dropwizard.metrics5.SlidingTimeWindowArrayReservoir;
+import io.dropwizard.metrics5.SlidingTimeWindowReservoir;
 import io.dropwizard.metrics5.Timer;
 import io.dropwizard.metrics5.WavefrontHistogram;
 

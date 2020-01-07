@@ -9,6 +9,7 @@ import io.dropwizard.metrics5.Histogram;
 import io.dropwizard.metrics5.Meter;
 import io.dropwizard.metrics5.MetricName;
 import io.dropwizard.metrics5.MetricRegistry;
+import io.dropwizard.metrics5.SlidingTimeWindowArrayReservoir;
 import io.dropwizard.metrics5.Timer;
 import io.dropwizard.metrics5.WavefrontHistogram;
 
@@ -60,6 +61,15 @@ public interface EntitiesInstantiator {
    * @return Timer
    */
   Timer newTimer(MetricName metricName);
+
+  /**
+   +   * Returns a new timer
+   +   *
+   +   * @param metricName  entity composed of name and optional point tags
+   +   * @param slidingTimeWindowArrayReservoir optional SlidingTimeWindowArrayReservoir
+   +   * @return Timer
+   +   */
+  Timer newTimer(MetricName metricName, SlidingTimeWindowArrayReservoir slidingTimeWindowArrayReservoir);
 
   /**
    * Returns a new meter
