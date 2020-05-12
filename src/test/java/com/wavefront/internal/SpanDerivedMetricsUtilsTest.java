@@ -10,9 +10,9 @@ import com.wavefront.sdk.common.annotation.Nullable;
 import com.wavefront.sdk.entities.histograms.HistogramGranularity;
 import com.wavefront.sdk.entities.tracing.SpanLog;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -32,7 +32,7 @@ import static com.wavefront.internal.SpanDerivedMetricsUtils.reportWavefrontGene
 import static com.wavefront.sdk.common.Constants.HEART_BEAT_METRIC;
 import static com.wavefront.sdk.common.Utils.histogramToLineData;
 import static com.wavefront.sdk.common.Utils.metricToLineData;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for {@link SpanDerivedMetricsUtils}.
@@ -152,8 +152,8 @@ public class SpanDerivedMetricsUtilsTest {
     }
   }
 
-  @BeforeAll
-  static void setUpAll() {
+  @BeforeClass
+  public static void classSetup() {
     wavefrontSender = new WavefrontSender() {
       @Override
       public String getClientId() {
@@ -212,7 +212,7 @@ public class SpanDerivedMetricsUtilsTest {
     };
   }
 
-  @BeforeEach
+  @Before
   public void setUp() throws IOException {
     // Clear metrics and histograms records.
     wavefrontSender.flush();
