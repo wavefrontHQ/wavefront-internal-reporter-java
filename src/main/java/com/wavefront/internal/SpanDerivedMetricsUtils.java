@@ -109,8 +109,8 @@ public class SpanDerivedMetricsUtils {
           if (traceDerivedCustomTagKeys.contains(tagKey)) {
             pointTags.put(tagKey, tagValue);
           }
-          // propagate http status if the span has error
-          if (isError && tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
+          // propagate http status
+          if (tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
             pointTags.put(HTTP_STATUS_KEY, tagValue);
           }
         });
