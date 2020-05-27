@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 
 import static com.wavefront.internal.SpanDerivedMetricsUtils.reportHeartbeats;
 import static com.wavefront.internal.SpanDerivedMetricsUtils.reportWavefrontGeneratedData;
+import static com.wavefront.sdk.common.Constants.DELTA_PREFIX;
+import static com.wavefront.sdk.common.Constants.DELTA_PREFIX_2;
 import static com.wavefront.sdk.common.Constants.HEART_BEAT_METRIC;
 import static com.wavefront.sdk.common.Utils.histogramToLineData;
 import static com.wavefront.sdk.common.Utils.metricToLineData;
@@ -45,6 +47,7 @@ public class SpanDerivedMetricsUtilsTest {
   private static WavefrontInternalReporter wavefrontInternalReporter;
   private static AtomicLong wavefrontHistogramClock;
   private static final Set<MetricRecord> heartbeatMetricsEmitted = new HashSet<>();
+  private static final Set<MetricRecord> deltaMetricsEmitted = new HashSet<>();
   private static final Set<MetricRecord> metricsEmitted = new HashSet<>();
   private static final Set<HistogramRecord> histogramsEmitted = new HashSet<>();
 
@@ -187,6 +190,8 @@ public class SpanDerivedMetricsUtilsTest {
         MetricRecord metricRecord = new MetricRecord(name, value, source, tags);
         if (name.equalsIgnoreCase(HEART_BEAT_METRIC)) {
           heartbeatMetricsEmitted.add(metricRecord);
+        } else if (name.startsWith(DELTA_PREFIX) || name.startsWith(DELTA_PREFIX_2)) {
+          deltaMetricsEmitted.add(metricRecord);
         } else {
           metricsEmitted.add(metricRecord);
         }
@@ -231,7 +236,7 @@ public class SpanDerivedMetricsUtilsTest {
     Pair<Map<String, String>, String> heartbeatTags = reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
         "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), () -> wavefrontHistogramClock.get());
+        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
 
     // Assert return pointTags of Heartbeat metrics.
     assertEquals(Stream.of(new String[][]{
@@ -283,20 +288,20 @@ public class SpanDerivedMetricsUtilsTest {
   }
 
   @Test
-  public void testNonErroneousSpanRedMetrics() {
+  public void testNonErroneousDeltaSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
         "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), () -> wavefrontHistogramClock.get());
+        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
     wavefrontInternalReporter.report();
 
-    Set<MetricRecord> metricExpected = new HashSet<>();
+    Set<MetricRecord> deltaCounterExpected = new HashSet<>();
     Set<HistogramRecord> histogramExpected = new HashSet<>();
 
-    metricExpected.add(new MetricRecord(
+    deltaCounterExpected.add(new MetricRecord(
         "∆tracing.derived.beachshirts.shopping.orderShirt.invocation.count",
         1.0,
         "default-source",
@@ -312,7 +317,7 @@ public class SpanDerivedMetricsUtilsTest {
             {"location", "SF"}
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))));
 
-    metricExpected.add(new MetricRecord(
+    deltaCounterExpected.add(new MetricRecord(
         "∆tracing.derived.beachshirts.shopping.orderShirt.total_time.millis.count",
         10.0,
         "default-source",
@@ -349,27 +354,27 @@ public class SpanDerivedMetricsUtilsTest {
     ));
 
     // Assert metrics data part of RED metrics.
-    assertEquals(metricExpected, metricsEmitted);
+    assertEquals(deltaCounterExpected, deltaMetricsEmitted);
 
     // Assert histogram data part of RED metrics.
     assertEquals(histogramExpected, histogramsEmitted);
   }
 
   @Test
-  public void testErroneousSpanRedMetrics() {
+  public void testErroneousDeltaSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
         "localhost", "jdbc", true, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), () -> wavefrontHistogramClock.get());
+        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
     wavefrontInternalReporter.report();
 
-    Set<MetricRecord> metricExpected = new HashSet<>();
+    Set<MetricRecord> deltaCounterExpected = new HashSet<>();
     Set<HistogramRecord> histogramExpected = new HashSet<>();
 
-    metricExpected.add(new MetricRecord(
+    deltaCounterExpected.add(new MetricRecord(
         "∆tracing.derived.beachshirts.shopping.orderShirt.invocation.count",
         1.0,
         "default-source",
@@ -385,7 +390,7 @@ public class SpanDerivedMetricsUtilsTest {
             {"location", "SF"}
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))));
 
-    metricExpected.add(new MetricRecord(
+    deltaCounterExpected.add(new MetricRecord(
         "∆tracing.derived.beachshirts.shopping.orderShirt.error.count",
         1.0,
         "default-source",
@@ -402,7 +407,7 @@ public class SpanDerivedMetricsUtilsTest {
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
     ));
 
-    metricExpected.add(new MetricRecord(
+    deltaCounterExpected.add(new MetricRecord(
         "∆tracing.derived.beachshirts.shopping.orderShirt.total_time.millis.count",
         10.0,
         "default-source",
@@ -440,7 +445,171 @@ public class SpanDerivedMetricsUtilsTest {
     ));
 
     // Assert metrics data part of RED metrics.
-    assertEquals(metricExpected, metricsEmitted);
+    assertEquals(deltaCounterExpected, deltaMetricsEmitted);
+
+    // Assert histogram data part of RED metrics.
+    assertEquals(histogramExpected, histogramsEmitted);
+  }
+
+  @Test
+  public void testNonErroneousSpanRedMetrics() {
+    reportWavefrontGeneratedData(
+        wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
+        "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
+        ImmutableList.of(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
+    long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
+
+    wavefrontHistogramClock.addAndGet(60000L + 1);
+    wavefrontInternalReporter.report();
+
+    Set<MetricRecord> counterExpected = new HashSet<>();
+    Set<HistogramRecord> histogramExpected = new HashSet<>();
+
+    counterExpected.add(new MetricRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.invocation.count",
+        1.0,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))));
+
+    counterExpected.add(new MetricRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.total_time.millis.count",
+        10.0,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
+    ));
+
+    histogramExpected.add(new HistogramRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
+        ImmutableList.of(new Pair<>(10000.0, 1)),
+        ImmutableSet.of(HistogramGranularity.MINUTE),
+        histogramEmittedMinuteMillis,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
+    ));
+
+    // Assert metrics data part of RED metrics.
+    assertEquals(counterExpected, metricsEmitted);
+
+    // Assert histogram data part of RED metrics.
+    assertEquals(histogramExpected, histogramsEmitted);
+  }
+
+  @Test
+  public void testErroneousSpanRedMetrics() {
+    reportWavefrontGeneratedData(
+        wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
+        "localhost", "jdbc", true, 10000L, Sets.newHashSet("location"),
+        ImmutableList.of(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
+    long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
+
+    wavefrontHistogramClock.addAndGet(60000L + 1);
+    wavefrontInternalReporter.report();
+
+    Set<MetricRecord> counterExpected = new HashSet<>();
+    Set<HistogramRecord> histogramExpected = new HashSet<>();
+
+    counterExpected.add(new MetricRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.invocation.count",
+        1.0,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))));
+
+    counterExpected.add(new MetricRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.error.count",
+        1.0,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
+    ));
+
+    counterExpected.add(new MetricRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.total_time.millis.count",
+        10.0,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
+    ));
+
+    histogramExpected.add(new HistogramRecord(
+        "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
+        ImmutableList.of(new Pair<>(10000.0, 1)),
+        ImmutableSet.of(HistogramGranularity.MINUTE),
+        histogramEmittedMinuteMillis,
+        "default-source",
+        Stream.of(new String[][]{
+            {"component", "jdbc"},
+            {"application", "beachshirts"},
+            {"service", "shopping"},
+            {"cluster", "us-west"},
+            {"shard", "primary"},
+            {"operationName", "orderShirt"},
+            {"span.kind", "none"},
+            {"source", "localhost"},
+            {"error", "true"},
+            {"location", "SF"}
+        }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
+    ));
+
+    // Assert metrics data part of RED metrics.
+    assertEquals(counterExpected, metricsEmitted);
 
     // Assert histogram data part of RED metrics.
     assertEquals(histogramExpected, histogramsEmitted);

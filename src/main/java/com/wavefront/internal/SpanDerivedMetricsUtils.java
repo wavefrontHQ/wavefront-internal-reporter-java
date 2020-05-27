@@ -71,10 +71,11 @@ public class SpanDerivedMetricsUtils {
       @Nonnull WavefrontInternalReporter wfInternalReporter, @Nonnull String operationName,
       @Nonnull String application, @Nonnull String service, String cluster, String shard,
       String source, String componentTagValue, boolean isError, long spanDurationMicros,
-      Set<String> traceDerivedCustomTagKeys, List<Pair<String, String>> spanTags) {
+      Set<String> traceDerivedCustomTagKeys, List<Pair<String, String>> spanTags,
+      boolean isReportingDelta) {
     return reportWavefrontGeneratedData(wfInternalReporter, operationName, application, service,
         cluster, shard, source, componentTagValue, isError, spanDurationMicros,
-        traceDerivedCustomTagKeys, spanTags, System::currentTimeMillis);
+        traceDerivedCustomTagKeys, spanTags, isReportingDelta, System::currentTimeMillis);
   }
 
   @VisibleForTesting
@@ -83,77 +84,87 @@ public class SpanDerivedMetricsUtils {
       @Nonnull WavefrontInternalReporter wfInternalReporter, String operationName, String application,
       String service, String cluster, String shard, String source, String componentTagValue,
       boolean isError, long spanDurationMicros, Set<String> traceDerivedCustomTagKeys,
-      List<Pair<String, String>> spanTags, Supplier<Long> clock) {
+      List<Pair<String, String>> spanTags, boolean isReportingDelta, Supplier<Long> clock) {
 
     Map<String, String> pointTags = new HashMap<>();
     source = getNonEmptyOrDefaultValue(source, "unknown_source");
 
-    try {
-      /*
-       * 1) Can only propagate mandatory application/service and optional cluster/shard tags.
-       * 2) Cannot convert ApplicationTags.customTags unfortunately as those are not well-known.
-       * 3) Both Jaeger and Zipkin support error=true tag for erroneous spans
-       */
-      pointTags.put(APPLICATION_TAG_KEY, getNonEmptyOrDefaultValue(application, "unknown_application"));
-      pointTags.put(SERVICE_TAG_KEY, getNonEmptyOrDefaultValue(service, "unknown_service"));
-      pointTags.put(CLUSTER_TAG_KEY, getNonEmptyOrDefaultValue(cluster, NULL_TAG_VAL));
-      pointTags.put(SHARD_TAG_KEY, getNonEmptyOrDefaultValue(shard, NULL_TAG_VAL));
-      pointTags.put(OPERATION_NAME_TAG, getNonEmptyOrDefaultValue(operationName, "unknown_operation"));
-      pointTags.put(COMPONENT_TAG_KEY, getNonEmptyOrDefaultValue(componentTagValue, NULL_TAG_VAL));
-      pointTags.put(SOURCE_KEY, source);
+    /*
+     * 1) Can only propagate mandatory application/service and optional cluster/shard tags.
+     * 2) Cannot convert ApplicationTags.customTags unfortunately as those are not well-known.
+     * 3) Both Jaeger and Zipkin support error=true tag for erroneous spans
+     */
+    pointTags.put(APPLICATION_TAG_KEY, getNonEmptyOrDefaultValue(application, "unknown_application"));
+    pointTags.put(SERVICE_TAG_KEY, getNonEmptyOrDefaultValue(service, "unknown_service"));
+    pointTags.put(CLUSTER_TAG_KEY, getNonEmptyOrDefaultValue(cluster, NULL_TAG_VAL));
+    pointTags.put(SHARD_TAG_KEY, getNonEmptyOrDefaultValue(shard, NULL_TAG_VAL));
+    pointTags.put(OPERATION_NAME_TAG, getNonEmptyOrDefaultValue(operationName, "unknown_operation"));
+    pointTags.put(COMPONENT_TAG_KEY, getNonEmptyOrDefaultValue(componentTagValue, NULL_TAG_VAL));
+    pointTags.put(SOURCE_KEY, source);
 
-      if (traceDerivedCustomTagKeys != null && traceDerivedCustomTagKeys.size() > 0) {
-        spanTags.forEach((tag) -> {
-          String tagKey = tag._1;
-          String tagValue = tag._2;
-          if (traceDerivedCustomTagKeys.contains(tagKey)) {
-            pointTags.put(tagKey, tagValue);
-          }
-          // propagate http status
-          if (tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
-            pointTags.put(HTTP_STATUS_KEY, tagValue);
-          }
-        });
-      }
-
-      // span.kind tag will be promoted by default
-      pointTags.putIfAbsent(SPAN_KIND_KEY, NULL_TAG_VAL);
-
-      // tracing.derived.<application>.<service>.<operation>.invocation.count
-      wfInternalReporter.newDeltaCounter(new MetricName(sanitizeWithoutQuotes(application +
-          "." + service + "." + operationName + INVOCATION_SUFFIX), pointTags)).inc();
-
-      if (isError) {
-        // tracing.derived.<application>.<service>.<operation>.error.count
-        wfInternalReporter.newDeltaCounter(new MetricName(sanitizeWithoutQuotes(application +
-            "." + service + "." + operationName + ERROR_SUFFIX), pointTags)).inc();
-      }
-
-      // tracing.derived.<application>.<service>.<operation>.duration.micros.m
-      if (isError) {
-        Map<String, String> errorPointTags = new HashMap<>(pointTags);
-        errorPointTags.put("error", "true");
-        wfInternalReporter.newWavefrontHistogram(new MetricName(sanitizeWithoutQuotes(application +
-            "." + service + "." + operationName + DURATION_SUFFIX), errorPointTags), clock).
-            update(spanDurationMicros);
-      } else {
-        wfInternalReporter.newWavefrontHistogram(new MetricName(sanitizeWithoutQuotes(application +
-            "." + service + "." + operationName + DURATION_SUFFIX), pointTags), clock).
-            update(spanDurationMicros);
-      }
-
-      // tracing.derived.<application>.<service>.<operation>.total_time.millis.count
-      wfInternalReporter.newDeltaCounter(new MetricName(sanitizeWithoutQuotes(application +
-          "." + service + "." + operationName + TOTAL_TIME_SUFFIX), pointTags)).
-          inc(spanDurationMicros / 1000);
-
-      // Remove operation tag and source tag from tags list before sending RED heartbeat.
-      pointTags.remove(OPERATION_NAME_TAG);
-      pointTags.remove(SOURCE_KEY);
-    } catch (Exception ignored) {
-      // This should never happen, if all SDKs version are set properly.
+    if (traceDerivedCustomTagKeys != null && traceDerivedCustomTagKeys.size() > 0) {
+      spanTags.forEach((tag) -> {
+        String tagKey = tag._1;
+        String tagValue = tag._2;
+        if (traceDerivedCustomTagKeys.contains(tagKey)) {
+          pointTags.put(tagKey, tagValue);
+        }
+        // propagate http status
+        if (tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
+          pointTags.put(HTTP_STATUS_KEY, tagValue);
+        }
+      });
     }
+
+    // span.kind tag will be promoted by default
+    pointTags.putIfAbsent(SPAN_KIND_KEY, NULL_TAG_VAL);
+
+    // tracing.derived.<application>.<service>.<operation>.invocation.count
+    incCounter(wfInternalReporter, new MetricName(sanitizeWithoutQuotes(application +
+        "." + service + "." + operationName + INVOCATION_SUFFIX), pointTags), isReportingDelta);
+
+    if (isError) {
+      // tracing.derived.<application>.<service>.<operation>.error.count
+      incCounter(wfInternalReporter, new MetricName(sanitizeWithoutQuotes(application +
+          "." + service + "." + operationName + ERROR_SUFFIX), pointTags), isReportingDelta);
+    }
+
+    // tracing.derived.<application>.<service>.<operation>.duration.micros.m
+    if (isError) {
+      Map<String, String> errorPointTags = new HashMap<>(pointTags);
+      errorPointTags.put("error", "true");
+      wfInternalReporter.newWavefrontHistogram(new MetricName(sanitizeWithoutQuotes(application +
+          "." + service + "." + operationName + DURATION_SUFFIX), errorPointTags), clock).
+          update(spanDurationMicros);
+    } else {
+      wfInternalReporter.newWavefrontHistogram(new MetricName(sanitizeWithoutQuotes(application +
+          "." + service + "." + operationName + DURATION_SUFFIX), pointTags), clock).
+          update(spanDurationMicros);
+    }
+
+    // tracing.derived.<application>.<service>.<operation>.total_time.millis.count
+    incCounter(wfInternalReporter, new MetricName(sanitizeWithoutQuotes(application +
+        "." + service + "." + operationName + TOTAL_TIME_SUFFIX), pointTags), isReportingDelta, spanDurationMicros / 1000);
+
+    // Remove operation tag and source tag from tags list before sending RED heartbeat.
+    pointTags.remove(OPERATION_NAME_TAG);
+    pointTags.remove(SOURCE_KEY);
+
     return new Pair<>(pointTags, source);
+  }
+
+  private static void incCounter(WavefrontInternalReporter wfInternalReporter,
+                                 MetricName metric, boolean isReportingDelta) {
+    incCounter(wfInternalReporter, metric, isReportingDelta, 1L);
+  }
+
+  private static void incCounter(WavefrontInternalReporter wfInternalReporter,
+                                 MetricName metric, boolean isReportingDelta, long n) {
+    if (isReportingDelta) {
+      wfInternalReporter.newDeltaCounter(metric).inc(n);
+    } else {
+      wfInternalReporter.newCounter(metric).inc(n);
+    }
   }
 
   /**
@@ -164,7 +175,7 @@ public class SpanDerivedMetricsUtils {
    */
   public static void reportHeartbeats(WavefrontSender wavefrontSender,
                                       Set<Pair<Map<String, String>, String>> discoveredHeartbeatMetrics) throws IOException {
-    reportHeartbeats(wavefrontSender, discoveredHeartbeatMetrics, null);
+    reportHeartbeats(wavefrontSender, discoveredHeartbeatMetrics, "");
   }
 
   /**
@@ -172,11 +183,12 @@ public class SpanDerivedMetricsUtils {
    *
    * @param wavefrontSender            Wavefront sender via proxy.
    * @param discoveredHeartbeatMetrics Discovered heartbeats.
-   * @param extraComponent             Extra component value need to be sent in heartbeats metric.
+   * @param secondaryComponent         Secondary component value need to be sent in heartbeats
+   *                                   metric.
    */
   public static void reportHeartbeats(WavefrontSender wavefrontSender,
                                       Set<Pair<Map<String, String>, String>> discoveredHeartbeatMetrics,
-                                      @Nullable String extraComponent) throws IOException {
+                                      @Nonnull String secondaryComponent) throws IOException {
     if (wavefrontSender == null) {
       // should never happen
       return;
@@ -189,8 +201,8 @@ public class SpanDerivedMetricsUtils {
       String source = key._2;
 
       wavefrontSender.sendMetric(HEART_BEAT_METRIC, 1.0, System.currentTimeMillis(), source, tags);
-      if (extraComponent != null && !extraComponent.trim().isEmpty()) {
-        tags.put(COMPONENT_TAG_KEY, extraComponent);
+      if (!secondaryComponent.trim().isEmpty()) {
+        tags.put(COMPONENT_TAG_KEY, secondaryComponent);
         wavefrontSender.sendMetric(HEART_BEAT_METRIC, 1.0, System.currentTimeMillis(), source, tags);
       }
       // remove from discovered list so that it is only reported on subsequent discovery
@@ -198,7 +210,8 @@ public class SpanDerivedMetricsUtils {
     }
   }
 
-  private static String getNonEmptyOrDefaultValue(String inputValue, String defaultValue) {
+  private static String getNonEmptyOrDefaultValue(@Nullable String inputValue,
+                                                  String defaultValue) {
     if (inputValue == null || inputValue.trim().isEmpty()) {
       return defaultValue;
     }
