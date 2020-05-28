@@ -1,6 +1,7 @@
 package com.wavefront.internal.reporter;
 
 import com.wavefront.internal.EntitiesInstantiator;
+import com.wavefront.java_sdk.com.google.common.annotations.VisibleForTesting;
 import com.wavefront.sdk.common.Constants;
 import com.wavefront.sdk.common.WavefrontSender;
 import com.wavefront.sdk.common.metrics.WavefrontSdkCounter;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -48,9 +50,9 @@ import io.dropwizard.metrics5.jvm.MemoryUsageGaugeSet;
 import io.dropwizard.metrics5.jvm.ThreadStatesGaugeSet;
 
 /**
- * Wavefront Internal Reporter that reports metrics and histograms to Wavefront via proxy or
- * direct ingestion. This internal reporter supports reporter level as well as metric/histogram
- * level point tags.
+ * Wavefront Internal Reporter that reports metrics and histograms to Wavefront via proxy or direct
+ * ingestion. This internal reporter supports reporter level as well as metric/histogram level point
+ * tags.
  *
  * @author Sushant Dewan (sushant@wavefront.com).
  */
@@ -71,12 +73,26 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     private final Map<String, String> reporterPointTags;
     private final Set<HistogramGranularity> histogramGranularities;
     private boolean includeJvmMetrics = false;
+    private Clock clock = Clock.defaultClock();
+    private ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
     public Builder() {
       this.prefix = null;
       this.source = "wavefront-internal-reporter";
       this.reporterPointTags = new HashMap<>();
       this.histogramGranularities = new HashSet<>();
+    }
+
+    @VisibleForTesting
+    public Builder withScheduledExecutorService(ScheduledExecutorService scheduledExecutorService) {
+      this.scheduledExecutorService = scheduledExecutorService;
+      return this;
+    }
+
+    @VisibleForTesting
+    public Builder withClock(Clock clock) {
+      this.clock = clock;
+      return this;
     }
 
     /**
@@ -173,12 +189,13 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
      */
     public WavefrontInternalReporter build(WavefrontSender wavefrontSender) {
       return new WavefrontInternalReporter(new MetricRegistry(), wavefrontSender,
-          prefix, source, reporterPointTags, histogramGranularities, includeJvmMetrics);
+          prefix, source, reporterPointTags, histogramGranularities, includeJvmMetrics, clock,
+          scheduledExecutorService);
     }
   }
 
   private final WavefrontSender wavefrontSender;
-  private final Clock clock = Clock.defaultClock();
+  private final Clock clock;
   private final String prefix;
   private final String source;
   private final Map<String, String> reporterPointTags;
@@ -200,11 +217,13 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
                                     String source,
                                     Map<String, String> reporterPointTags,
                                     Set<HistogramGranularity> histogramGranularities,
-                                    boolean includeJvmMetrics) {
+                                    boolean includeJvmMetrics,
+                                    Clock clock,
+                                    ScheduledExecutorService scheduledExecutorService) {
+    this.clock = clock;
     internalRegistry = registry;
     scheduledReporter = new ScheduledReporter(registry, "wavefront-reporter", MetricFilter.ALL,
-        TimeUnit.SECONDS, TimeUnit.MILLISECONDS, Executors.newSingleThreadScheduledExecutor(),
-        true, Collections.emptySet()) {
+        TimeUnit.SECONDS, TimeUnit.MILLISECONDS, scheduledExecutorService, true, Collections.emptySet()) {
 
       /**
        * Called periodically by the polling thread. Subclasses should report all the given metrics.
@@ -284,10 +303,10 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     }
 
     sdkMetricsRegistry = new WavefrontSdkMetricsRegistry.Builder(this.wavefrontSender).
-            prefix(Constants.SDK_METRIC_PREFIX + ".internal_reporter").
-            source(this.source).
-            tags(this.reporterPointTags).
-            build();
+        prefix(Constants.SDK_METRIC_PREFIX + ".internal_reporter").
+        source(this.source).
+        tags(this.reporterPointTags).
+        build();
 
     gaugesReported = sdkMetricsRegistry.newCounter("gauges.reported");
     deltaCountersReported = sdkMetricsRegistry.newCounter("delta_counters.reported");
@@ -428,6 +447,11 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   }
 
   private static final Pattern SIMPLE_NAMES = Pattern.compile("[^a-zA-Z0-9_.\\-~]");
+
+  @VisibleForTesting
+  public void report() {
+    scheduledReporter.report();
+  }
 
   @Override
   public void start(long period, TimeUnit unit) {
