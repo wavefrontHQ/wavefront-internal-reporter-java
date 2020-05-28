@@ -64,6 +64,7 @@ public class SpanDerivedMetricsUtils {
    *                                  duration).
    * @param traceDerivedCustomTagKeys custom tags added to derived RED metrics.
    * @param spanTags                  span tags.
+   * @param isReportingDelta          reporting delta counters or normal counters.
    * @return Pair of Heartbeat custom tags and source.
    */
   @Nonnull
@@ -144,7 +145,8 @@ public class SpanDerivedMetricsUtils {
 
     // tracing.derived.<application>.<service>.<operation>.total_time.millis.count
     incCounter(wfInternalReporter, new MetricName(sanitizeWithoutQuotes(application +
-        "." + service + "." + operationName + TOTAL_TIME_SUFFIX), pointTags), isReportingDelta, spanDurationMicros / 1000);
+        "." + service + "." + operationName + TOTAL_TIME_SUFFIX), pointTags), isReportingDelta,
+        spanDurationMicros / 1000);
 
     // Remove operation tag and source tag from tags list before sending RED heartbeat.
     pointTags.remove(OPERATION_NAME_TAG);
@@ -174,7 +176,8 @@ public class SpanDerivedMetricsUtils {
    * @param discoveredHeartbeatMetrics Discovered heartbeats.
    */
   public static void reportHeartbeats(WavefrontSender wavefrontSender,
-                                      Set<Pair<Map<String, String>, String>> discoveredHeartbeatMetrics) throws IOException {
+                                      Set<Pair<Map<String, String>, String>> discoveredHeartbeatMetrics)
+      throws IOException {
     reportHeartbeats(wavefrontSender, discoveredHeartbeatMetrics, "");
   }
 
