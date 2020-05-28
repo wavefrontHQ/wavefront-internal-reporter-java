@@ -78,6 +78,14 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     private boolean includeJvmMetrics = false;
     private Clock clock = Clock.defaultClock();
     private ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    
+    private static String getDefaultSource() {
+      try {
+        return InetAddress.getLocalHost().getHostName();
+      } catch (UnknownHostException ex) {
+        return DEFAULT_SOURCE_WF_INTERNAL_REPORTER;
+      }
+    }
 
     public Builder() {
       this.prefix = null;
@@ -85,13 +93,6 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       this.reporterPointTags = new HashMap<>();
       this.histogramGranularities = new HashSet<>();
     }
-
-    private static String getDefaultSource() {
-      try {
-        return InetAddress.getLocalHost().getHostName();
-      } catch (UnknownHostException ex) {
-        return DEFAULT_SOURCE_WF_INTERNAL_REPORTER;
-      }
 
     @VisibleForTesting
     public Builder withScheduledExecutorService(ScheduledExecutorService scheduledExecutorService) {
