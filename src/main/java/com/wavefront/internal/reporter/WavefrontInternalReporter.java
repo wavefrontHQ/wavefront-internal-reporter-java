@@ -10,6 +10,8 @@ import com.wavefront.sdk.entities.histograms.WavefrontHistogramImpl;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,6 +62,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
 
   private final ScheduledReporter scheduledReporter;
   private final MetricRegistry internalRegistry;
+  public final static String DEFAULT_SOURCE_WF_INTERNAL_REPORTER = "wavefront-internal-reporter";
 
   /**
    * A builder for {@link WavefrontInternalReporter} instances. Defaults to not using a prefix,
@@ -74,9 +77,17 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
 
     public Builder() {
       this.prefix = null;
-      this.source = "wavefront-internal-reporter";
+      this.source = getDefaultSource();
       this.reporterPointTags = new HashMap<>();
       this.histogramGranularities = new HashSet<>();
+    }
+
+    private static String getDefaultSource() {
+      try {
+        return InetAddress.getLocalHost().getHostName();
+      } catch (UnknownHostException ex) {
+        return DEFAULT_SOURCE_WF_INTERNAL_REPORTER;
+      }
     }
 
     /**
