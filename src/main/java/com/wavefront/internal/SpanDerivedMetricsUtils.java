@@ -50,6 +50,34 @@ public class SpanDerivedMetricsUtils {
   private static final String HTTP_STATUS_KEY = "http.status_code";
 
   /**
+   * Report generated metrics and histograms from the wavefront tracing span using delta counter.
+   *
+   * @param operationName             span operation name.
+   * @param application               name of the application.
+   * @param service                   name of the service.
+   * @param cluster                   name of the cluster.
+   * @param shard                     name of the shard.
+   * @param source                    reporting source.
+   * @param componentTagValue         component tag value.
+   * @param isError                   indicates if the span is erroneous.
+   * @param spanDurationMicros        Original span duration (both Zipkin and Jaeger support micros
+   *                                  duration).
+   * @param traceDerivedCustomTagKeys custom tags added to derived RED metrics.
+   * @param spanTags                  span tags.
+   * @return Pair of Heartbeat custom tags and source.
+   */
+  @Nonnull
+  public static Pair<Map<String, String>, String> reportWavefrontGeneratedData(
+      @Nonnull WavefrontInternalReporter wfInternalReporter, @Nonnull String operationName,
+      @Nonnull String application, @Nonnull String service, String cluster, String shard,
+      String source, String componentTagValue, boolean isError, long spanDurationMicros,
+      Set<String> traceDerivedCustomTagKeys, List<Pair<String, String>> spanTags) {
+    return reportWavefrontGeneratedData(wfInternalReporter, operationName, application, service,
+        cluster, shard, source, componentTagValue, isError, spanDurationMicros,
+        traceDerivedCustomTagKeys, spanTags, true, System::currentTimeMillis);
+  }
+
+  /**
    * Report generated metrics and histograms from the wavefront tracing span.
    *
    * @param operationName             span operation name.

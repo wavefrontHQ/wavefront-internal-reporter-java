@@ -3,12 +3,14 @@ package com.wavefront.internal.reporter;
 import com.wavefront.internal.EntitiesInstantiator;
 import com.wavefront.java_sdk.com.google.common.annotations.VisibleForTesting;
 import com.wavefront.sdk.common.Constants;
+import com.wavefront.sdk.common.NamedThreadFactory;
 import com.wavefront.sdk.common.WavefrontSender;
 import com.wavefront.sdk.common.metrics.WavefrontSdkCounter;
 import com.wavefront.sdk.common.metrics.WavefrontSdkMetricsRegistry;
 import com.wavefront.sdk.entities.histograms.HistogramGranularity;
 import com.wavefront.sdk.entities.histograms.WavefrontHistogramImpl;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -58,7 +60,7 @@ import io.dropwizard.metrics5.jvm.ThreadStatesGaugeSet;
  *
  * @author Sushant Dewan (sushant@wavefront.com).
  */
-public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator {
+public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator, Closeable {
   private static final Logger logger =
       Logger.getLogger(WavefrontInternalReporter.class.getCanonicalName());
 
@@ -77,8 +79,9 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     private final Set<HistogramGranularity> histogramGranularities;
     private boolean includeJvmMetrics = false;
     private Clock clock = Clock.defaultClock();
-    private ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    
+    private ScheduledExecutorService scheduledExecutorService =  Executors.newScheduledThreadPool(1,
+        new NamedThreadFactory("wavefront-internal-reporter").setDaemon(true));
+
     private static String getDefaultSource() {
       try {
         return InetAddress.getLocalHost().getHostName();
@@ -472,6 +475,11 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   @Override
   public void stop() {
     scheduledReporter.stop();
+  }
+
+  @Override
+  public void close() {
+    this.stop();
   }
 
   @Override
