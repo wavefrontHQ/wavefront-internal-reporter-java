@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Executors;
@@ -52,6 +53,8 @@ import io.dropwizard.metrics5.jvm.FileDescriptorRatioGauge;
 import io.dropwizard.metrics5.jvm.GarbageCollectorMetricSet;
 import io.dropwizard.metrics5.jvm.MemoryUsageGaugeSet;
 import io.dropwizard.metrics5.jvm.ThreadStatesGaugeSet;
+
+import static com.wavefront.sdk.common.Utils.getSemVer;
 
 /**
  * Wavefront Internal Reporter that reports metrics and histograms to Wavefront via proxy or direct
@@ -321,6 +324,9 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
         source(this.source).
         tags(this.reporterPointTags).
         build();
+
+    double sdkVersion = getSemVer();
+    sdkMetricsRegistry.newGauge("version", () -> sdkVersion);
 
     gaugesReported = sdkMetricsRegistry.newCounter("gauges.reported");
     deltaCountersReported = sdkMetricsRegistry.newCounter("delta_counters.reported");
