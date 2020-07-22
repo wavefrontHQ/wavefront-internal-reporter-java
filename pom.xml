@@ -31,7 +31,7 @@
         <developerConnection>scm:git:git@github.com:wavefrontHQ/wavefront-internal-reporter-java.git</developerConnection>
         <url>git@github.com:wavefrontHQ/wavefront-internal-reporter-java.git</url>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
 
     <distributionManagement>
         <snapshotRepository>
@@ -44,6 +44,7 @@
         <io.dropwizard.metrics5.version>5.0.0-rc2</io.dropwizard.metrics5.version>
         <slf4j.version>1.7.25</slf4j.version>
         <java.version>1.8</java.version>
+        <jackson.version>2.11.0</jackson.version>
     </properties>
 
     <build>
@@ -216,17 +217,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.9.10</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.9.10</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.10.0.pr1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

@@ -14,8 +14,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -199,7 +197,7 @@ public class SpanDerivedMetricsUtilsTest {
 
       @Override
       public void sendFormattedMetric(String point) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -207,7 +205,7 @@ public class SpanDerivedMetricsUtilsTest {
                            UUID traceId, UUID spanId, @Nullable List<UUID> parents,
                            @Nullable List<UUID> followsFrom, @Nullable List<Pair<String, String>> tags,
                            @Nullable List<SpanLog> spanLogs) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
       }
 
       @Override
