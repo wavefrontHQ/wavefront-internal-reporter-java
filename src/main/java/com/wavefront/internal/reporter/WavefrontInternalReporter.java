@@ -53,7 +53,7 @@ import io.dropwizard.metrics5.jvm.GarbageCollectorMetricSet;
 import io.dropwizard.metrics5.jvm.MemoryUsageGaugeSet;
 import io.dropwizard.metrics5.jvm.ThreadStatesGaugeSet;
 
-import static com.wavefront.sdk.common.Utils.getSemVer;
+import static com.wavefront.sdk.common.Utils.getSemVerGauge;
 
 /**
  * Wavefront Internal Reporter that reports metrics and histograms to Wavefront via proxy or direct
@@ -324,7 +324,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
         tags(this.reporterPointTags).
         build();
 
-    double sdkVersion = getSemVer();
+    double sdkVersion = getSemVerGauge("wavefront-internal-reporter-java");
     sdkMetricsRegistry.newGauge("version", () -> sdkVersion);
 
     gaugesReported = sdkMetricsRegistry.newCounter("gauges.reported");
