@@ -349,7 +349,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
 
   private void reportTimer(MetricName metricName, Timer timer) throws IOException {
     final Snapshot snapshot = timer.getSnapshot();
-    final long time = clock.getTime() / 1000;
+    final long time = clock.getTime();
     sendIfEnabled(MetricAttribute.MAX, metricName,
         scheduledReporter.convertDuration(snapshot.getMax()), time);
     sendIfEnabled(MetricAttribute.MEAN, metricName,
@@ -375,7 +375,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   }
 
   private void reportMetered(MetricName metricName, Metered meter) throws IOException {
-    final long time = clock.getTime() / 1000;
+    final long time = clock.getTime();
     sendIfEnabled(MetricAttribute.COUNT, metricName, meter.getCount(), time);
     sendIfEnabled(MetricAttribute.M1_RATE, metricName,
         scheduledReporter.convertRate(meter.getOneMinuteRate()), time);
@@ -397,7 +397,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       }
     } else {
       final Snapshot snapshot = histogram.getSnapshot();
-      final long time = clock.getTime() / 1000;
+      final long time = clock.getTime();
       sendIfEnabled(MetricAttribute.COUNT, metricName, histogram.getCount(), time);
       sendIfEnabled(MetricAttribute.MAX, metricName, snapshot.getMax(), time);
       sendIfEnabled(MetricAttribute.MEAN, metricName, snapshot.getMean(), time);
@@ -417,17 +417,18 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       long count = counter.getCount();
       String name = Constants.DELTA_PREFIX +
           prefixAndSanitize(metricName.getKey().substring(1), "count");
-      wavefrontSender.sendDeltaCounter(name, count, source, getMetricTags(metricName));
+      wavefrontSender.sendDeltaCounter(name, count, clock.getTime(), source,
+          getMetricTags(metricName));
       counter.dec(count);
     } else {
       wavefrontSender.sendMetric(prefixAndSanitize(metricName.getKey(), "count"),
-          counter.getCount(), clock.getTime() / 1000, source, getMetricTags(metricName));
+          counter.getCount(), clock.getTime(), source, getMetricTags(metricName));
     }
   }
 
   private void reportGauge(MetricName metricName, Gauge<Number> gauge) throws IOException {
     wavefrontSender.sendMetric(prefixAndSanitize(metricName.getKey()),
-        gauge.getValue().doubleValue(), clock.getTime() / 1000,
+        gauge.getValue().doubleValue(), clock.getTime(),
         source, getMetricTags(metricName));
   }
 
