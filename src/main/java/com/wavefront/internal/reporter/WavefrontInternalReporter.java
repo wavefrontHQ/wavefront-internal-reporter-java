@@ -258,15 +258,16 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
                          SortedMap<MetricName, Meter> meters,
                          SortedMap<MetricName, Timer> timers) {
         try {
+          final long timestamp = clock.getTime();
           for (Map.Entry<MetricName, Gauge> entry : gauges.entrySet()) {
             if (entry.getValue().getValue() instanceof Number) {
-              reportGauge(entry.getKey(), entry.getValue());
+              reportGauge(entry.getKey(), entry.getValue(), timestamp);
               gaugesReported.inc();
             }
           }
 
           for (Map.Entry<MetricName, Counter> entry : counters.entrySet()) {
-            reportCounter(entry.getKey(), entry.getValue());
+            reportCounter(entry.getKey(), entry.getValue(), timestamp);
             if (entry.getValue() instanceof DeltaCounter) {
               deltaCountersReported.inc();
             } else {
@@ -275,7 +276,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
           }
 
           for (Map.Entry<MetricName, Histogram> entry : histograms.entrySet()) {
-            reportHistogram(entry.getKey(), entry.getValue());
+            reportHistogram(entry.getKey(), entry.getValue(), timestamp);
             if (entry.getValue() instanceof WavefrontHistogram) {
               wfHistogramsReported.inc();
             } else {
@@ -284,12 +285,12 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
           }
 
           for (Map.Entry<MetricName, Meter> entry : meters.entrySet()) {
-            reportMetered(entry.getKey(), entry.getValue());
+            reportMetered(entry.getKey(), entry.getValue(), timestamp);
             metersReported.inc();
           }
 
           for (Map.Entry<MetricName, Timer> entry : timers.entrySet()) {
-            reportTimer(entry.getKey(), entry.getValue());
+            reportTimer(entry.getKey(), entry.getValue(), timestamp);
             timersReported.inc();
           }
         } catch (IOException e) {
@@ -347,47 +348,48 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     }
   }
 
-  private void reportTimer(MetricName metricName, Timer timer) throws IOException {
+  private void reportTimer(MetricName metricName, Timer timer, long timestamp)
+      throws IOException {
     final Snapshot snapshot = timer.getSnapshot();
-    final long time = clock.getTime();
     sendIfEnabled(MetricAttribute.MAX, metricName,
-        scheduledReporter.convertDuration(snapshot.getMax()), time);
+        scheduledReporter.convertDuration(snapshot.getMax()), timestamp);
     sendIfEnabled(MetricAttribute.MEAN, metricName,
-        scheduledReporter.convertDuration(snapshot.getMean()), time);
+        scheduledReporter.convertDuration(snapshot.getMean()), timestamp);
     sendIfEnabled(MetricAttribute.MIN, metricName,
-        scheduledReporter.convertDuration(snapshot.getMin()), time);
+        scheduledReporter.convertDuration(snapshot.getMin()), timestamp);
     sendIfEnabled(MetricAttribute.STDDEV, metricName,
-        scheduledReporter.convertDuration(snapshot.getStdDev()), time);
+        scheduledReporter.convertDuration(snapshot.getStdDev()), timestamp);
     sendIfEnabled(MetricAttribute.P50, metricName,
-        scheduledReporter.convertDuration(snapshot.getMedian()), time);
+        scheduledReporter.convertDuration(snapshot.getMedian()), timestamp);
     sendIfEnabled(MetricAttribute.P75, metricName,
-        scheduledReporter.convertDuration(snapshot.get75thPercentile()), time);
+        scheduledReporter.convertDuration(snapshot.get75thPercentile()), timestamp);
     sendIfEnabled(MetricAttribute.P95, metricName,
-        scheduledReporter.convertDuration(snapshot.get95thPercentile()), time);
+        scheduledReporter.convertDuration(snapshot.get95thPercentile()), timestamp);
     sendIfEnabled(MetricAttribute.P98, metricName,
-        scheduledReporter.convertDuration(snapshot.get98thPercentile()), time);
+        scheduledReporter.convertDuration(snapshot.get98thPercentile()), timestamp);
     sendIfEnabled(MetricAttribute.P99, metricName,
-        scheduledReporter.convertDuration(snapshot.get99thPercentile()), time);
+        scheduledReporter.convertDuration(snapshot.get99thPercentile()), timestamp);
     sendIfEnabled(MetricAttribute.P999, metricName,
-        scheduledReporter.convertDuration(snapshot.get999thPercentile()), time);
+        scheduledReporter.convertDuration(snapshot.get999thPercentile()), timestamp);
 
-    reportMetered(metricName, timer);
+    reportMetered(metricName, timer, timestamp);
   }
 
-  private void reportMetered(MetricName metricName, Metered meter) throws IOException {
-    final long time = clock.getTime();
-    sendIfEnabled(MetricAttribute.COUNT, metricName, meter.getCount(), time);
+  private void reportMetered(MetricName metricName, Metered meter, long timestamp)
+      throws IOException {
+    sendIfEnabled(MetricAttribute.COUNT, metricName, meter.getCount(), timestamp);
     sendIfEnabled(MetricAttribute.M1_RATE, metricName,
-        scheduledReporter.convertRate(meter.getOneMinuteRate()), time);
+        scheduledReporter.convertRate(meter.getOneMinuteRate()), timestamp);
     sendIfEnabled(MetricAttribute.M5_RATE, metricName,
-        scheduledReporter.convertRate(meter.getFiveMinuteRate()), time);
+        scheduledReporter.convertRate(meter.getFiveMinuteRate()), timestamp);
     sendIfEnabled(MetricAttribute.M15_RATE, metricName,
-        scheduledReporter.convertRate(meter.getFifteenMinuteRate()), time);
+        scheduledReporter.convertRate(meter.getFifteenMinuteRate()), timestamp);
     sendIfEnabled(MetricAttribute.MEAN_RATE, metricName,
-        scheduledReporter.convertRate(meter.getMeanRate()), time);
+        scheduledReporter.convertRate(meter.getMeanRate()), timestamp);
   }
 
-  private void reportHistogram(MetricName metricName, Histogram histogram) throws IOException {
+  private void reportHistogram(MetricName metricName, Histogram histogram, long timestamp)
+      throws IOException {
     if (histogram instanceof WavefrontHistogram) {
       String histogramName = prefixAndSanitize(metricName.getKey());
       for (WavefrontHistogramImpl.Distribution distribution :
@@ -397,38 +399,39 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       }
     } else {
       final Snapshot snapshot = histogram.getSnapshot();
-      final long time = clock.getTime();
-      sendIfEnabled(MetricAttribute.COUNT, metricName, histogram.getCount(), time);
-      sendIfEnabled(MetricAttribute.MAX, metricName, snapshot.getMax(), time);
-      sendIfEnabled(MetricAttribute.MEAN, metricName, snapshot.getMean(), time);
-      sendIfEnabled(MetricAttribute.MIN, metricName, snapshot.getMin(), time);
-      sendIfEnabled(MetricAttribute.STDDEV, metricName, snapshot.getStdDev(), time);
-      sendIfEnabled(MetricAttribute.P50, metricName, snapshot.getMedian(), time);
-      sendIfEnabled(MetricAttribute.P75, metricName, snapshot.get75thPercentile(), time);
-      sendIfEnabled(MetricAttribute.P95, metricName, snapshot.get95thPercentile(), time);
-      sendIfEnabled(MetricAttribute.P98, metricName, snapshot.get98thPercentile(), time);
-      sendIfEnabled(MetricAttribute.P99, metricName, snapshot.get99thPercentile(), time);
-      sendIfEnabled(MetricAttribute.P999, metricName, snapshot.get999thPercentile(), time);
+      sendIfEnabled(MetricAttribute.COUNT, metricName, histogram.getCount(), timestamp);
+      sendIfEnabled(MetricAttribute.MAX, metricName, snapshot.getMax(), timestamp);
+      sendIfEnabled(MetricAttribute.MEAN, metricName, snapshot.getMean(), timestamp);
+      sendIfEnabled(MetricAttribute.MIN, metricName, snapshot.getMin(), timestamp);
+      sendIfEnabled(MetricAttribute.STDDEV, metricName, snapshot.getStdDev(), timestamp);
+      sendIfEnabled(MetricAttribute.P50, metricName, snapshot.getMedian(), timestamp);
+      sendIfEnabled(MetricAttribute.P75, metricName, snapshot.get75thPercentile(), timestamp);
+      sendIfEnabled(MetricAttribute.P95, metricName, snapshot.get95thPercentile(), timestamp);
+      sendIfEnabled(MetricAttribute.P98, metricName, snapshot.get98thPercentile(), timestamp);
+      sendIfEnabled(MetricAttribute.P99, metricName, snapshot.get99thPercentile(), timestamp);
+      sendIfEnabled(MetricAttribute.P999, metricName, snapshot.get999thPercentile(), timestamp);
     }
   }
 
-  private void reportCounter(MetricName metricName, Counter counter) throws IOException {
+  private void reportCounter(MetricName metricName, Counter counter, long timestamp)
+      throws IOException {
     if (counter instanceof DeltaCounter) {
       long count = counter.getCount();
       String name = Constants.DELTA_PREFIX +
           prefixAndSanitize(metricName.getKey().substring(1), "count");
-      wavefrontSender.sendDeltaCounter(name, count, clock.getTime(), source,
+      wavefrontSender.sendDeltaCounter(name, count, timestamp, source,
           getMetricTags(metricName));
       counter.dec(count);
     } else {
       wavefrontSender.sendMetric(prefixAndSanitize(metricName.getKey(), "count"),
-          counter.getCount(), clock.getTime(), source, getMetricTags(metricName));
+          counter.getCount(), timestamp, source, getMetricTags(metricName));
     }
   }
 
-  private void reportGauge(MetricName metricName, Gauge<Number> gauge) throws IOException {
+  private void reportGauge(MetricName metricName, Gauge<Number> gauge, long timestamp)
+      throws IOException {
     wavefrontSender.sendMetric(prefixAndSanitize(metricName.getKey()),
-        gauge.getValue().doubleValue(), clock.getTime(),
+        gauge.getValue().doubleValue(), timestamp,
         source, getMetricTags(metricName));
   }
 
