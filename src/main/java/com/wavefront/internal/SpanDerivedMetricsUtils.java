@@ -131,19 +131,21 @@ public class SpanDerivedMetricsUtils {
     pointTags.put(COMPONENT_TAG_KEY, getNonEmptyOrDefaultValue(componentTagValue, NULL_TAG_VAL));
     pointTags.put(SOURCE_KEY, source);
 
-    if (traceDerivedCustomTagKeys != null && traceDerivedCustomTagKeys.size() > 0) {
-      spanTags.forEach((tag) -> {
-        String tagKey = tag._1;
-        String tagValue = tag._2;
-        if (traceDerivedCustomTagKeys.contains(tagKey)) {
-          pointTags.put(tagKey, tagValue);
-        }
-        // propagate http status
-        if (tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
-          pointTags.put(HTTP_STATUS_KEY, tagValue);
-        }
-      });
-    }
+    boolean hasTraceDerivedCustomTagKeys = traceDerivedCustomTagKeys != null && traceDerivedCustomTagKeys.size() > 0;
+    spanTags.forEach((tag) -> {
+      String tagKey = tag._1;
+      String tagValue = tag._2;
+
+      // propagate trace derived custom tags
+      if (hasTraceDerivedCustomTagKeys && traceDerivedCustomTagKeys.contains(tagKey)) {
+        pointTags.put(tagKey, tagValue);
+      }
+
+      // propagate http status
+      if (tagKey.equalsIgnoreCase(HTTP_STATUS_KEY)) {
+        pointTags.put(HTTP_STATUS_KEY, tagValue);
+      }
+    });
 
     // span.kind tag will be promoted by default
     pointTags.putIfAbsent(SPAN_KIND_KEY, NULL_TAG_VAL);

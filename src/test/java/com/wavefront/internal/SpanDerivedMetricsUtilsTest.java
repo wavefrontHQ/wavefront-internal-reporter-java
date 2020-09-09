@@ -164,6 +164,7 @@ public class SpanDerivedMetricsUtilsTest {
       @Override
       public void flush() {
         metricsEmitted.clear();
+        deltaMetricsEmitted.clear();
         histogramsEmitted.clear();
       }
 
@@ -290,7 +291,7 @@ public class SpanDerivedMetricsUtilsTest {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
         "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
+        ImmutableList.of(new Pair<>("location", "SF"), new Pair<>("http.status_code", "502")), true, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
@@ -312,7 +313,8 @@ public class SpanDerivedMetricsUtilsTest {
             {"operationName", "orderShirt"},
             {"span.kind", "none"},
             {"source", "localhost"},
-            {"location", "SF"}
+            {"location", "SF"},
+            {"http.status_code", "502"}
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))));
 
     deltaCounterExpected.add(new MetricRecord(
@@ -328,7 +330,8 @@ public class SpanDerivedMetricsUtilsTest {
             {"operationName", "orderShirt"},
             {"span.kind", "none"},
             {"source", "localhost"},
-            {"location", "SF"}
+            {"location", "SF"},
+            {"http.status_code", "502"}
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
     ));
 
@@ -347,7 +350,8 @@ public class SpanDerivedMetricsUtilsTest {
             {"operationName", "orderShirt"},
             {"span.kind", "none"},
             {"source", "localhost"},
-            {"location", "SF"}
+            {"location", "SF"},
+            {"http.status_code", "502"}
         }).collect(Collectors.toMap(data -> data[0], data -> data[1]))
     ));
 
