@@ -22,8 +22,12 @@ public class DeltaCounter extends Counter {
     }
     DeltaCounter counter = new DeltaCounter();
     try {
+      Metric metric = registry.getMetrics().get(metricName);
+      if (metric instanceof DeltaCounter) {
+        return (DeltaCounter) metric;
+      }
       return registry.register(metricName, counter);
-    } catch(IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       Counter existing = registry.counter(metricName);
       if (existing instanceof DeltaCounter) {
         return (DeltaCounter) existing;

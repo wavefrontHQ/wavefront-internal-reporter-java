@@ -27,8 +27,12 @@ public class WavefrontHistogram extends Histogram implements Metric {
     WavefrontHistogram tDigestHistogram = new WavefrontHistogram(reservoir, clock);
     reservoir.set(tDigestHistogram);
     try {
+      Metric metric = registry.getMetrics().get(metricName);
+      if (metric instanceof WavefrontHistogram) {
+        return (WavefrontHistogram) metric;
+      }
       return registry.register(metricName, tDigestHistogram);
-    } catch(IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       Histogram existing = registry.histogram(metricName);
       if (existing instanceof WavefrontHistogram) {
         return (WavefrontHistogram) existing;
@@ -152,7 +156,9 @@ public class WavefrontHistogram extends Histogram implements Metric {
     }
 
     @Override
-    public int size() { return (int) wfHist.getCount(); }
+    public int size() {
+      return (int) wfHist.getCount();
+    }
 
     @Override
     public void update(long l) {
