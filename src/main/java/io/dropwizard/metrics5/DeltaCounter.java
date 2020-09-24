@@ -9,7 +9,7 @@ import com.wavefront.sdk.common.Constants;
  */
 public class DeltaCounter extends Counter {
 
-  public static synchronized DeltaCounter get(MetricRegistry registry, MetricName metricName) {
+  public static DeltaCounter get(MetricRegistry registry, MetricName metricName) {
 
     if (registry == null || metricName == null || metricName.getKey().isEmpty()) {
       throw new IllegalArgumentException("Invalid arguments");
