@@ -5,6 +5,9 @@
 [maven-img]: https://img.shields.io/maven-central/v/com.wavefront/wavefront-internal-reporter-java.svg?maxAge=604800
 [maven]: http://search.maven.org/#search%7Cga%7C1%7Cwavefront-internal-reporter-java
 
+Internal metrics reporter sdk which offers common metrics reporting functionality to other Observability SDKs in Java. <br />
+**Note:** Users are not supposed to use this SDK directly as it is internal building block for other sdks.
+
 ## Internal Diagnostic Metrics
 
 This SDK automatically collects a set of diagnostic metrics that allow you to monitor your `WavefrontInternalReporter` instance. These metrics are collected once per minute and are reported to Wavefront using your `WavefrontSender` instance.
