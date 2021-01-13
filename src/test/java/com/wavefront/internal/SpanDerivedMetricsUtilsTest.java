@@ -157,6 +157,14 @@ public class SpanDerivedMetricsUtilsTest {
   public static void classSetup() {
     wavefrontSender = new WavefrontSender() {
       @Override
+      public void sendLog(String s, double v, Long aLong, String s1, Map<String, String> map) {
+      }
+
+      @Override
+      public void sendEvent(String s, long l, long l1, String s1, Map<String, String> map, Map<String, String> map1) {
+      }
+
+      @Override
       public String getClientId() {
         return "";
       }
