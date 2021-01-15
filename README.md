@@ -16,14 +16,14 @@ The following is a list of the diagnostic metrics that are collected:
 
 |Metric Name|Metric Type|Description|
 |:---|:---:|:---|
-|~sdk.java.internal_reporter.gauges.reported.count                |Counter    |Times that gauges are reported|
-|~sdk.java.internal_reporter.delta_counters.reported.count        |Counter    |Times that delta counters are reported|
-|~sdk.java.internal_reporter.counters.reported.count              |Counter    |Times that non-delta counters are reported|
-|~sdk.java.internal_reporter.wavefront_histograms.reported.count  |Counter    |Times that Wavefront histograms are reported|
-|~sdk.java.internal_reporter.histograms.reported.count            |Counter    |Times that non-Wavefront histograms are reported|
-|~sdk.java.internal_reporter.meters.reported.count                |Counter    |Times that meters are reported|
-|~sdk.java.internal_reporter.timers.reported.count                |Counter    |Times that timers are reported|
-|~sdk.java.internal_reporter.errors.count                         |Counter    |Exceptions encountered while reporting|
+|~sdk.java.internal_reporter.gauges.reported.count                |Delta Counter    |Times that gauges are reported|
+|~sdk.java.internal_reporter.delta_counters.reported.count        |Delta Counter    |Times that delta counters are reported|
+|~sdk.java.internal_reporter.counters.reported.count              |Delta Counter    |Times that non-delta counters are reported|
+|~sdk.java.internal_reporter.wavefront_histograms.reported.count  |Delta Counter    |Times that Wavefront histograms are reported|
+|~sdk.java.internal_reporter.histograms.reported.count            |Delta Counter    |Times that non-Wavefront histograms are reported|
+|~sdk.java.internal_reporter.meters.reported.count                |Delta Counter    |Times that meters are reported|
+|~sdk.java.internal_reporter.timers.reported.count                |Delta Counter    |Times that timers are reported|
+|~sdk.java.internal_reporter.errors.count                         |Delta Counter    |Exceptions encountered while reporting|
 
 Each of the above metrics is reported with the same source and application tags that are specified for your `WavefrontInternalReporter`.
 
