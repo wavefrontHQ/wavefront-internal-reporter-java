@@ -484,6 +484,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   @Override
   public void stop() {
     scheduledReporter.stop();
+    sdkMetricsRegistry.close();
   }
 
   @Override
