@@ -1,7 +1,6 @@
 package com.wavefront.internal;
 
 import com.wavefront.internal.reporter.WavefrontInternalReporter;
-import com.wavefront.java_sdk.com.google.common.annotations.VisibleForTesting;
 import com.wavefront.sdk.common.Pair;
 import com.wavefront.sdk.common.WavefrontSender;
 
@@ -107,7 +106,6 @@ public class SpanDerivedMetricsUtils {
         traceDerivedCustomTagKeys, spanTags, isReportingDelta, System::currentTimeMillis);
   }
 
-  @VisibleForTesting
   @Nonnull
   protected static Pair<Map<String, String>, String> reportWavefrontGeneratedData(
       @Nonnull WavefrontInternalReporter wfInternalReporter, String operationName, String application,

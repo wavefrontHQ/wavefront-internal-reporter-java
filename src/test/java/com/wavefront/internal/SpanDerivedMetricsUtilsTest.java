@@ -1,9 +1,6 @@
 package com.wavefront.internal;
 
 import com.wavefront.internal.reporter.WavefrontInternalReporter;
-import com.wavefront.java_sdk.com.google.common.collect.ImmutableList;
-import com.wavefront.java_sdk.com.google.common.collect.ImmutableSet;
-import com.wavefront.java_sdk.com.google.common.collect.Sets;
 import com.wavefront.sdk.common.Pair;
 import com.wavefront.sdk.common.WavefrontSender;
 import com.wavefront.sdk.common.annotation.Nullable;
@@ -15,6 +12,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +40,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class SpanDerivedMetricsUtilsTest {
 
-  private static WavefrontSender wavefrontSender;
-  private static WavefrontInternalReporter wavefrontInternalReporter;
-  private static AtomicLong wavefrontHistogramClock;
   private static final Set<MetricRecord> heartbeatMetricsEmitted = new HashSet<>();
   private static final Set<MetricRecord> deltaMetricsEmitted = new HashSet<>();
   private static final Set<MetricRecord> metricsEmitted = new HashSet<>();
   private static final Set<HistogramRecord> histogramsEmitted = new HashSet<>();
+  private static WavefrontSender wavefrontSender;
+  private static WavefrontInternalReporter wavefrontInternalReporter;
+  private static AtomicLong wavefrontHistogramClock;
 
   static class MetricRecord {
     String name;
@@ -91,7 +90,7 @@ public class SpanDerivedMetricsUtilsTest {
 
     @Override
     public String toString() {
-      return metricToLineData(name, value,  null, source, tags, "default-source");
+      return metricToLineData(name, value, null, source, tags, "default-source");
     }
   }
 
@@ -157,6 +156,14 @@ public class SpanDerivedMetricsUtilsTest {
   public static void classSetup() {
     wavefrontSender = new WavefrontSender() {
       @Override
+      public void sendLog(String s, double v, Long aLong, String s1, Map<String, String> map) {
+      }
+
+      @Override
+      public void sendEvent(String s, long l, long l1, String s1, Map<String, String> map, Map<String, String> map1) {
+      }
+
+      @Override
       public String getClientId() {
         return "";
       }
@@ -216,6 +223,11 @@ public class SpanDerivedMetricsUtilsTest {
     };
   }
 
+  @SafeVarargs
+  private static <E> List<E> immutableList(E... elements) {
+    return Collections.unmodifiableList(Arrays.asList(elements));
+  }
+
   @Before
   public void setUp() throws IOException {
     // Clear metrics and histograms records.
@@ -234,8 +246,8 @@ public class SpanDerivedMetricsUtilsTest {
   public void testHeartbeatMetrics() throws IOException {
     Pair<Map<String, String>, String> heartbeatTags = reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
-        "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
+        "localhost", "jdbc", false, 10000L, Collections.singleton("location"),
+        immutableList(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
 
     // Assert return pointTags of Heartbeat metrics.
     assertEquals(Stream.of(new String[][]{
@@ -250,8 +262,7 @@ public class SpanDerivedMetricsUtilsTest {
 
     // Assert return source value of Heartbeat metrics.
     assertEquals("localhost", heartbeatTags._2);
-
-    reportHeartbeats(wavefrontSender, Sets.newHashSet(heartbeatTags));
+    reportHeartbeats(wavefrontSender, new HashSet<>(Collections.singleton(heartbeatTags)));
 
     Set<MetricRecord> heatbeatMetricsExpected = new HashSet<>();
     heatbeatMetricsExpected.add(new MetricRecord(
@@ -270,7 +281,8 @@ public class SpanDerivedMetricsUtilsTest {
     assertEquals(heatbeatMetricsExpected, heartbeatMetricsEmitted);
     heartbeatMetricsEmitted.clear();
 
-    reportHeartbeats(wavefrontSender, Sets.newHashSet(heartbeatTags), "jaeger");
+    reportHeartbeats(wavefrontSender, new HashSet<>(Collections.singleton(heartbeatTags)),
+        "jaeger");
     heatbeatMetricsExpected.add(new MetricRecord(
         "~component.heartbeat",
         1.0,
@@ -290,8 +302,9 @@ public class SpanDerivedMetricsUtilsTest {
   public void testNonErroneousDeltaSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
-        "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF"), new Pair<>("http.status_code", "502")), true, () -> wavefrontHistogramClock.get());
+        "localhost", "jdbc", false, 10000L, Collections.singleton("location"),
+        immutableList(new Pair<>("location", "SF"), new Pair<>("http.status_code", "502")),
+        true, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
@@ -337,8 +350,8 @@ public class SpanDerivedMetricsUtilsTest {
 
     histogramExpected.add(new HistogramRecord(
         "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
-        ImmutableList.of(new Pair<>(10000.0, 1)),
-        ImmutableSet.of(HistogramGranularity.MINUTE),
+        immutableList(new Pair<>(10000.0, 1)),
+        Collections.singleton(HistogramGranularity.MINUTE),
         histogramEmittedMinuteMillis,
         "default-source",
         Stream.of(new String[][]{
@@ -366,8 +379,8 @@ public class SpanDerivedMetricsUtilsTest {
   public void testErroneousDeltaSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
-        "localhost", "jdbc", true, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
+        "localhost", "jdbc", true, 10000L, Collections.singleton("location"),
+        immutableList(new Pair<>("location", "SF")), true, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
@@ -428,8 +441,8 @@ public class SpanDerivedMetricsUtilsTest {
 
     histogramExpected.add(new HistogramRecord(
         "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
-        ImmutableList.of(new Pair<>(10000.0, 1)),
-        ImmutableSet.of(HistogramGranularity.MINUTE),
+        immutableList(new Pair<>(10000.0, 1)),
+        Collections.singleton(HistogramGranularity.MINUTE),
         histogramEmittedMinuteMillis,
         "default-source",
         Stream.of(new String[][]{
@@ -457,8 +470,8 @@ public class SpanDerivedMetricsUtilsTest {
   public void testNonErroneousSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
-        "localhost", "jdbc", false, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
+        "localhost", "jdbc", false, 10000L, Collections.singleton("location"),
+        immutableList(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
@@ -502,8 +515,8 @@ public class SpanDerivedMetricsUtilsTest {
 
     histogramExpected.add(new HistogramRecord(
         "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
-        ImmutableList.of(new Pair<>(10000.0, 1)),
-        ImmutableSet.of(HistogramGranularity.MINUTE),
+        immutableList(new Pair<>(10000.0, 1)),
+        Collections.singleton(HistogramGranularity.MINUTE),
         histogramEmittedMinuteMillis,
         "default-source",
         Stream.of(new String[][]{
@@ -530,8 +543,8 @@ public class SpanDerivedMetricsUtilsTest {
   public void testErroneousSpanRedMetrics() {
     reportWavefrontGeneratedData(
         wavefrontInternalReporter, "orderShirt", "beachshirts", "shopping", "us-west", "primary",
-        "localhost", "jdbc", true, 10000L, Sets.newHashSet("location"),
-        ImmutableList.of(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
+        "localhost", "jdbc", true, 10000L, Collections.singleton("location"),
+        immutableList(new Pair<>("location", "SF")), false, () -> wavefrontHistogramClock.get());
     long histogramEmittedMinuteMillis = (wavefrontHistogramClock.get() / 60000L) * 60000L;
 
     wavefrontHistogramClock.addAndGet(60000L + 1);
@@ -592,8 +605,8 @@ public class SpanDerivedMetricsUtilsTest {
 
     histogramExpected.add(new HistogramRecord(
         "tracing.derived.beachshirts.shopping.orderShirt.duration.micros",
-        ImmutableList.of(new Pair<>(10000.0, 1)),
-        ImmutableSet.of(HistogramGranularity.MINUTE),
+        immutableList(new Pair<>(10000.0, 1)),
+        Collections.singleton(HistogramGranularity.MINUTE),
         histogramEmittedMinuteMillis,
         "default-source",
         Stream.of(new String[][]{

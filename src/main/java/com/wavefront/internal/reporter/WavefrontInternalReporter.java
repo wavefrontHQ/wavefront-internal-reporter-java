@@ -1,11 +1,10 @@
 package com.wavefront.internal.reporter;
 
 import com.wavefront.internal.EntitiesInstantiator;
-import com.wavefront.java_sdk.com.google.common.annotations.VisibleForTesting;
 import com.wavefront.sdk.common.Constants;
 import com.wavefront.sdk.common.NamedThreadFactory;
 import com.wavefront.sdk.common.WavefrontSender;
-import com.wavefront.sdk.common.metrics.WavefrontSdkCounter;
+import com.wavefront.sdk.common.metrics.WavefrontSdkDeltaCounter;
 import com.wavefront.sdk.common.metrics.WavefrontSdkMetricsRegistry;
 import com.wavefront.sdk.entities.histograms.HistogramGranularity;
 import com.wavefront.sdk.entities.histograms.WavefrontHistogramImpl;
@@ -99,13 +98,11 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       this.histogramGranularities = new HashSet<>();
     }
 
-    @VisibleForTesting
     public Builder withScheduledExecutorService(ScheduledExecutorService scheduledExecutorService) {
       this.scheduledExecutorService = scheduledExecutorService;
       return this;
     }
 
-    @VisibleForTesting
     public Builder withClock(Clock clock) {
       this.clock = clock;
       return this;
@@ -218,14 +215,14 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   private final Set<HistogramGranularity> histogramGranularities;
   private final WavefrontSdkMetricsRegistry sdkMetricsRegistry;
 
-  private final WavefrontSdkCounter gaugesReported;
-  private final WavefrontSdkCounter deltaCountersReported;
-  private final WavefrontSdkCounter countersReported;
-  private final WavefrontSdkCounter wfHistogramsReported;
-  private final WavefrontSdkCounter histogramsReported;
-  private final WavefrontSdkCounter metersReported;
-  private final WavefrontSdkCounter timersReported;
-  private final WavefrontSdkCounter reportErrors;
+  private final WavefrontSdkDeltaCounter gaugesReported;
+  private final WavefrontSdkDeltaCounter deltaCountersReported;
+  private final WavefrontSdkDeltaCounter countersReported;
+  private final WavefrontSdkDeltaCounter wfHistogramsReported;
+  private final WavefrontSdkDeltaCounter histogramsReported;
+  private final WavefrontSdkDeltaCounter metersReported;
+  private final WavefrontSdkDeltaCounter timersReported;
+  private final WavefrontSdkDeltaCounter reportErrors;
 
   private WavefrontInternalReporter(MetricRegistry registry,
                                     WavefrontSender wavefrontSender,
@@ -328,14 +325,14 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
     double sdkVersion = getSemVerGauge("wavefront-internal-reporter-java");
     sdkMetricsRegistry.newGauge("version", () -> sdkVersion);
 
-    gaugesReported = sdkMetricsRegistry.newCounter("gauges.reported");
-    deltaCountersReported = sdkMetricsRegistry.newCounter("delta_counters.reported");
-    countersReported = sdkMetricsRegistry.newCounter("counters.reported");
-    wfHistogramsReported = sdkMetricsRegistry.newCounter("wavefront_histograms.reported");
-    histogramsReported = sdkMetricsRegistry.newCounter("histograms.reported");
-    metersReported = sdkMetricsRegistry.newCounter("meters.reported");
-    timersReported = sdkMetricsRegistry.newCounter("timers.reported");
-    reportErrors = sdkMetricsRegistry.newCounter("errors");
+    gaugesReported = sdkMetricsRegistry.newDeltaCounter("gauges.reported");
+    deltaCountersReported = sdkMetricsRegistry.newDeltaCounter("delta_counters.reported");
+    countersReported = sdkMetricsRegistry.newDeltaCounter("counters.reported");
+    wfHistogramsReported = sdkMetricsRegistry.newDeltaCounter("wavefront_histograms.reported");
+    histogramsReported = sdkMetricsRegistry.newDeltaCounter("histograms.reported");
+    metersReported = sdkMetricsRegistry.newDeltaCounter("meters.reported");
+    timersReported = sdkMetricsRegistry.newDeltaCounter("timers.reported");
+    reportErrors = sdkMetricsRegistry.newDeltaCounter("errors");
   }
 
   private <T extends Metric> void tryRegister(MetricRegistry registry, String name, T metric) {
@@ -471,7 +468,6 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
 
   private static final Pattern SIMPLE_NAMES = Pattern.compile("[^a-zA-Z0-9_.\\-~]");
 
-  @VisibleForTesting
   public void report() {
     scheduledReporter.report();
   }
@@ -484,6 +480,7 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
   @Override
   public void stop() {
     scheduledReporter.stop();
+    sdkMetricsRegistry.close();
   }
 
   @Override
