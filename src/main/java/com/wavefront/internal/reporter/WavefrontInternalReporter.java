@@ -1,7 +1,6 @@
 package com.wavefront.internal.reporter;
 
 import com.wavefront.internal.EntitiesInstantiator;
-import com.wavefront.java_sdk.com.google.common.annotations.VisibleForTesting;
 import com.wavefront.sdk.common.Constants;
 import com.wavefront.sdk.common.NamedThreadFactory;
 import com.wavefront.sdk.common.WavefrontSender;
@@ -99,13 +98,11 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
       this.histogramGranularities = new HashSet<>();
     }
 
-    @VisibleForTesting
     public Builder withScheduledExecutorService(ScheduledExecutorService scheduledExecutorService) {
       this.scheduledExecutorService = scheduledExecutorService;
       return this;
     }
 
-    @VisibleForTesting
     public Builder withClock(Clock clock) {
       this.clock = clock;
       return this;
@@ -471,7 +468,6 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
 
   private static final Pattern SIMPLE_NAMES = Pattern.compile("[^a-zA-Z0-9_.\\-~]");
 
-  @VisibleForTesting
   public void report() {
     scheduledReporter.report();
   }
