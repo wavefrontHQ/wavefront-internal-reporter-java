@@ -44,7 +44,7 @@
         <io.dropwizard.metrics5.version>5.0.0-rc3</io.dropwizard.metrics5.version>
         <slf4j.version>1.7.32</slf4j.version>
         <java.version>1.8</java.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.5</jackson.version>
     </properties>
 
     <build>
