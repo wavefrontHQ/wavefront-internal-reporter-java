@@ -42,7 +42,6 @@
 
     <properties>
         <io.dropwizard.metrics5.version>5.0.0-rc3</io.dropwizard.metrics5.version>
-        <slf4j.version>1.7.32</slf4j.version>
         <java.version>1.8</java.version>
         <jackson.version>2.12.4</jackson.version>
     </properties>
@@ -197,12 +196,6 @@
             <groupId>io.dropwizard.metrics5</groupId>
             <artifactId>metrics-jvm</artifactId>
             <version>${io.dropwizard.metrics5.version}</version>
-        </dependency>
-        <!-- For https://www.slf4j.org/codes.html#StaticLoggerBinder -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.wavefront</groupId>
