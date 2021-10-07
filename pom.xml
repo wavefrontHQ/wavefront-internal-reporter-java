@@ -198,12 +198,6 @@
             <artifactId>metrics-jvm</artifactId>
             <version>${io.dropwizard.metrics5.version}</version>
         </dependency>
-        <!-- For https://www.slf4j.org/codes.html#StaticLoggerBinder -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.wavefront</groupId>
             <artifactId>wavefront-sdk-java</artifactId>
@@ -228,6 +222,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- For https://www.slf4j.org/codes.html#StaticLoggerBinder -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
