@@ -18,7 +18,7 @@ import java.io.IOException;
  */
 public class ReportingUtils {
   /**
-   * Construct {@link WavefrontSender) from {@link WavefrontReportingConfig}
+   * Construct {@link WavefrontSender} from {@link WavefrontReportingConfig}
    */
   public static WavefrontSender constructWavefrontSender(
       WavefrontReportingConfig wfReportingConfig) {
