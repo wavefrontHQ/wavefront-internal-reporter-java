@@ -248,17 +248,16 @@ public class WavefrontInternalReporter implements Reporter, EntitiesInstantiator
        * @param timers     all of the timers in the registry
        */
       @Override
-      @SuppressWarnings("rawtypes")
-      public void report(SortedMap<MetricName, Gauge> gauges,
+      public void report(SortedMap<MetricName, Gauge<?>> gauges,
                          SortedMap<MetricName, Counter> counters,
                          SortedMap<MetricName, Histogram> histograms,
                          SortedMap<MetricName, Meter> meters,
                          SortedMap<MetricName, Timer> timers) {
         try {
           final long timestamp = clock.getTime();
-          for (Map.Entry<MetricName, Gauge> entry : gauges.entrySet()) {
+          for (Map.Entry<MetricName, Gauge<?>> entry : gauges.entrySet()) {
             if (entry.getValue().getValue() instanceof Number) {
-              reportGauge(entry.getKey(), entry.getValue(), timestamp);
+              reportGauge(entry.getKey(), (Gauge<Number>) entry.getValue(), timestamp);
               gaugesReported.inc();
             }
           }
