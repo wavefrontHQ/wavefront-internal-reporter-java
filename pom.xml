@@ -17,15 +17,6 @@
         </license>
     </licenses>
 
-    <developers>
-        <developer>
-            <name>Sushant Dewan</name>
-            <email>sushant@wavefront.com</email>
-            <organization>Wavefront</organization>
-            <organizationUrl>http://www.wavefront.com</organizationUrl>
-        </developer>
-    </developers>
-
     <scm>
         <connection>scm:git:git@github.com:wavefronthq/wavefront-internal-reporter-java.git</connection>
         <developerConnection>scm:git:git@github.com:wavefrontHQ/wavefront-internal-reporter-java.git</developerConnection>
@@ -42,7 +33,6 @@
 
     <properties>
         <io.dropwizard.metrics5.version>5.0.0-rc7</io.dropwizard.metrics5.version>
-        <slf4j.version>1.7.32</slf4j.version>
         <java.version>1.8</java.version>
         <jackson.version>2.12.4</jackson.version>
     </properties>
@@ -78,41 +68,6 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <minimizeJar>true</minimizeJar>
-                            <artifactSet>
-                                <includes>
-                                    <include>io.dropwizard.metrics5</include>
-                                </includes>
-                            </artifactSet>
-                            <relocations>
-                                <relocation>
-                                    <pattern>io.dropwizard.metrics5</pattern>
-                                    <shadedPattern>com.wavefront.internal_reporter_java.io.dropwizard.metrics5</shadedPattern>
-                                </relocation>
-                            </relocations>
-                            <filters>
-                                <filter>
-                                    <excludes>
-                                        <exclude>META-INF/license/**</exclude>
-                                        <exclude>license/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -222,13 +177,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- For https://www.slf4j.org/codes.html#StaticLoggerBinder -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
