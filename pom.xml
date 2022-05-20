@@ -44,7 +44,7 @@
         <io.dropwizard.metrics5.version>5.0.0-rc11</io.dropwizard.metrics5.version>
         <slf4j.version>1.7.36</slf4j.version>
         <java.version>1.8</java.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson.version>2.13.3</jackson.version>
     </properties>
 
     <build>
@@ -174,7 +174,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.11</version>
+                        <version>1.6.13</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
