@@ -1,6 +1,6 @@
 open_source_licenses.txt
 
-Wavefront Internal Reporter for Java 1.7.11 GA
+Wavefront Internal Reporter for Java 1.7.12 GA
 
 ======================================================================
 
@@ -841,4 +841,4 @@ Source Files is valid for three years from the date you acquired or last used th
 Software product. Alternatively, the Source Files may accompany the
 VMware service.
 
-[WAVEFRONTINTERNALREPORTERJAVA1711GAAB041020]
+[WAVEFRONTINTERNALREPORTERJAVA1712GAAB041020]
