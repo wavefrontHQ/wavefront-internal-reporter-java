@@ -8,11 +8,11 @@ on:
 
 jobs:
   build:
-
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: ["8", "11", "16", "17"]
+        java: ["8", "11", "17"]
 
     steps:
     - uses: actions/checkout@v2

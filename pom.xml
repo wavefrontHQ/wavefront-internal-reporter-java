@@ -42,9 +42,7 @@
 
     <properties>
         <io.dropwizard.metrics5.version>5.0.0-rc12</io.dropwizard.metrics5.version>
-        <slf4j.version>1.7.36</slf4j.version>
         <java.version>1.8</java.version>
-        <jackson.version>2.13.4</jackson.version>
     </properties>
 
     <build>
@@ -187,6 +185,18 @@
         </profile>
     </profiles>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.13.4.20221012</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.dropwizard.metrics5</groupId>
@@ -206,17 +216,14 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <!-- CVE-2022-38752: Override vulnerable snakeyaml in jackson-dataformat-yaml.
              Remove snakeyaml once jackson-dataformat-yaml 2.14 is released. -->
@@ -235,7 +242,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-nop</artifactId>
-            <version>${slf4j.version}</version>
+            <version>1.7.36</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
